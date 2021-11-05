@@ -153,6 +153,13 @@
       <version>2.8.5</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/io.netty/netty-transport -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport</artifactId>
+      <version>4.1.68.Final</version>
+    </dependency>
+
 
 
   </dependencies>

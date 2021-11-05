@@ -2,6 +2,7 @@ import com.google.gson.Gson;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import io.netty.channel.pool.ChannelPool;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -103,6 +104,74 @@ public class SkierServlet extends HttpServlet {
 
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
       throws IOException {
+    final  String QUEUE_NAME = "threadExQ";
+    final int NUM_THREAD =10;
+
+    String[] urlPathList = request.getPathInfo().split("/");
+    if(!isSkierPostUrlValid(urlPathList)){
+      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      String responseJSON = new Gson().toJson(new MessageResponse("The URL path is invalid"));
+      response.getWriter().write(responseJSON);
+      return;
+    }
+
+    try{
+      int resortID = Integer.parseInt(urlPathList[1]);
+      int season = Integer.parseInt(urlPathList[3]);
+      int day = Integer.parseInt(urlPathList[5]);
+      int skierID = Integer.parseInt(urlPathList[7]);
+
+      SkierServletPostResponse postResponse = new SkierServletPostResponse(resortID, season, day, skierID);
+
+      ConnectionFactory factory = new ConnectionFactory();
+      factory.setHost("localhost");
+
+      final Connection conn = factory.newConnection();
+      Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+          try{
+            Channel channel = conn.createChannel();
+            channel.queueDeclare(QUEUE_NAME, true, false, false, null);
+            channel.basicPublish("", QUEUE_NAME, null, new Gson().toJson(postResponse).getBytes());
+            channel.close();
+          }catch (IOException | TimeoutException e){
+            e.printStackTrace();
+          }
+        }
+      };
+
+      Thread[] threads = new Thread[NUM_THREAD];
+      for(int i = 1; i<= NUM_THREAD; i++){
+        threads[i] = new Thread(runnable);
+      }
+      for(Thread thread:threads){
+        thread.start();
+      }
+      for(Thread thread:threads){
+        thread.join();
+      }
+      conn.close();
+
+      // response to the user
+      response.setStatus(HttpServletResponse.SC_OK);
+//      LiftRide liftRide = new Gson().fromJson(getBodyContent(request), LiftRide.class);
+//      response.getWriter().write(new Gson().toJson(liftRide));
+    }catch (NumberFormatException e){
+      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+//      String responseJSON = new Gson().toJson(new MessageResponse("The type of the input parameter doesn't match"));
+//      response.getWriter().write(responseJSON);
+    }catch(IllegalArgumentException e){
+      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+//      String responseJSON = new Gson().toJson(new MessageResponse(e.getMessage()));
+//      response.getWriter().write(responseJSON);
+    }catch (InterruptedException | TimeoutException e){
+      e.printStackTrace();
+    }
+
+
+
+
     BufferedReader reader = request.getReader();
     String jsonString = "";
     try{
@@ -131,7 +200,25 @@ public class SkierServlet extends HttpServlet {
 
 
 
+  private boolean isSkierPostUrlValid(String[] urlPathList) {
+    if (urlPathList.length != 8) {
+      return false;
+    }
 
+    return urlPathList[2].equals("seasons") && urlPathList[4].equals("days")
+        && urlPathList[6].equals("skiers");
+  }
+
+  private String getBodyContent(HttpServletRequest req) throws IOException {
+    BufferedReader reqBodyBuffer = req.getReader();
+    StringBuilder reqBody = new StringBuilder();
+    String line;
+    while ((line = reqBodyBuffer.readLine()) != null) {
+      reqBody.append(line);
+    }
+
+    return reqBody.toString();
+  }
 
 
 
