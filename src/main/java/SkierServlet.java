@@ -106,11 +106,12 @@ public class SkierServlet extends HttpServlet {
       throws IOException {
     final  String QUEUE_NAME = "threadExQ";
     final int NUM_THREAD =10;
+    response.setContentType("application/json");
 
     String[] urlPathList = request.getPathInfo().split("/");
     if(!isSkierPostUrlValid(urlPathList)){
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      String responseJSON = new Gson().toJson(new MessageResponse("The URL path is invalid"));
+      String responseJSON = new Gson().toJson(new String("The URL path is invalid"));
       response.getWriter().write(responseJSON);
       return;
     }
@@ -124,7 +125,8 @@ public class SkierServlet extends HttpServlet {
       SkierServletPostResponse postResponse = new SkierServletPostResponse(resortID, season, day, skierID);
 
       ConnectionFactory factory = new ConnectionFactory();
-      factory.setHost("localhost");
+      factory.setHost("ec2-100-26-208-245.compute-1.amazonaws.com");
+
 
       final Connection conn = factory.newConnection();
       Runnable runnable = new Runnable() {
@@ -172,27 +174,27 @@ public class SkierServlet extends HttpServlet {
 
 
 
-    BufferedReader reader = request.getReader();
-    String jsonString = "";
-    try{
-      for(String line;(line = reader.readLine()) != null; jsonString += line);
-    }catch (IOException e){
-      e.printStackTrace();
-    }
-
-    response.setContentType("application/json");
-
-    String urlPath = request.getPathInfo();
-    if(!isBodyValid(jsonString)){
-      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      response.getWriter().write("{\"message\": \"invalid input\"}");
-    }else if (!isUrlValid(urlPath)) {
-      response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-      response.getWriter().write("{\"message\": \"not found\"}");
-    } else {
-      response.setStatus(HttpServletResponse.SC_CREATED);
-      response.getWriter().write("{\"message\": \"ok\"}");
-    }
+//    BufferedReader reader = request.getReader();
+//    String jsonString = "";
+//    try{
+//      for(String line;(line = reader.readLine()) != null; jsonString += line);
+//    }catch (IOException e){
+//      e.printStackTrace();
+//    }
+//
+//    response.setContentType("application/json");
+//
+//    String urlPath = request.getPathInfo();
+//    if(!isBodyValid(jsonString)){
+//      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+//      response.getWriter().write("{\"message\": \"invalid input\"}");
+//    }else if (!isUrlValid(urlPath)) {
+//      response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+//      response.getWriter().write("{\"message\": \"not found\"}");
+//    } else {
+//      response.setStatus(HttpServletResponse.SC_CREATED);
+//      response.getWriter().write("{\"message\": \"ok\"}");
+//    }
 
   }
 

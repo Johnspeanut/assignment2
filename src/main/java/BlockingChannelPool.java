@@ -1,3 +1,4 @@
+/*
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -43,4 +44,4 @@ public class BlockingChannelPool implements ChannelPool {
   public boolean add(Channel channel) {
     return blockingQueue.add(channel);
   }
-}
+}*/
